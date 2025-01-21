@@ -1,6 +1,8 @@
 # SSH Login Alert Telegram Bot
 
-这是一个用于在 SSH 登录时通过 Telegram 发送通知的系统。它由一个 Bash 脚本和一个 Cloudflare Worker 组成。
+## Hi～
+
+这是一个用于在 SSH 登录时通过 Telegram 发送告警的系统。它由一个 Bash 脚本和一个 Cloudflare Worker 组成。
 
 ## 功能特点
 
@@ -15,8 +17,8 @@
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/ssh-login-alert-telegram.git
-cd ssh-login-alert-telegram
+git clone https://github.com/lingyicute/SSH-Telegram-Alert.git
+cd SSH-Telegram-Alert
 ```
 
 2. 运行安装脚本：
@@ -31,7 +33,7 @@ sudo ./install.sh
 sudo nano /opt/ssh-login-alert-telegram/credentials.config
 
 # 添加你的 Telegram 用户 ID 或频道 ID
-USERID=( "YOUR_TELEGRAM_ID" "YOUR_CHANNEL_ID" )
+USERID=( "YOUR_TELEGRAM_ID" or "YOUR_CHANNEL_ID" )
 
 # 设置用于验证的令牌
 AUTH_TOKEN="your-secure-token-here"
@@ -82,4 +84,19 @@ sudo systemctl restart fail2ban
 
 ## 许可证
 
-GPLv3 License
+SSH-Telegram-Alert is released under the GNU General Public License v3.0 (GPLv3).
+
+Copyright (C) 2024 lingyicute.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see https://www.gnu.org/licenses.
