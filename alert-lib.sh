@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
+# 启用错误处理
+set -e
+set -o pipefail
+
 # IP缓存文件（每天自动清理）
 IP_CACHE_FILE="/tmp/ip_location_cache_$(date +%Y%m%d)"
+touch "$IP_CACHE_FILE"
+chmod 600 "$IP_CACHE_FILE"
 
 # 从缓存获取IP位置信息
 get_cached_location() {
@@ -48,7 +54,7 @@ get_location_from_ipapi() {
 get_location_from_ipapi_com() {
     local ip=$1
     local location
-    location=$(curl -s -m 5 "http://ip-api.com/json/${ip}")
+    location=$(curl -s -m 5 "https://ip-api.com/json/${ip}")
     if [ $? -eq 0 ] && [ -n "$location" ] && echo "$location" | grep -q "\"status\":\"success\""; then
         if command -v jq >/dev/null 2>&1; then
             local city region country
@@ -99,10 +105,15 @@ get_ip_location() {
 # 发送告警消息到worker
 send_alert() {
     local text=$1
-    local worker_url="https://sshnotify.92li.us.kg/notify"
     local max_retries=3
     local retry_count=0
     local success=false
+    
+    # 检查必要的配置
+    if [ -z "$WORKER_URL" ] || [ -z "$AUTH_TOKEN" ]; then
+        echo "错误：WORKER_URL 或 AUTH_TOKEN 未设置"
+        return 1
+    }
     
     # 转义JSON特殊字符
     text=$(echo "$text" | sed 's/"/\\"/g')
@@ -116,7 +127,7 @@ send_alert() {
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${AUTH_TOKEN}" \
             -d "$json_data" \
-            "$worker_url")
+            "$WORKER_URL")
         
         # 获取状态码和响应体
         http_code=$(echo "$response" | tail -n1)

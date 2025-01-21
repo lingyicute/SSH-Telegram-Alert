@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# 启用错误处理
+set -e
+set -o pipefail
+
 # 检查是否以 root 权限运行
 if [ "$EUID" -ne 0 ]; then 
     echo "请以 root 权限运行此脚本"
