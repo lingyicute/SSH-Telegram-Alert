@@ -8,8 +8,10 @@
 
 - SSH 登录实时通知
 - SSH 登录失败告警（通过 fail2ban 集成）
+  - 20分钟内4次失败尝试将导致IP被封禁20分钟
+  - IP封禁和解封时都会发送告警
 - 支持多个 Telegram 用户/频道
-- 包含登录 IP 信息
+- 包含登录 IP 信息和地理位置
 - 使用 Cloudflare Worker 作为中继服务
 - 支持 Markdown 格式消息
 
@@ -32,10 +34,10 @@ sudo ./install.sh
 # 编辑配置文件
 sudo nano /opt/ssh-login-alert-telegram/credentials.config
 
-# 添加你的 Telegram 用户 ID 或频道 ID
-USERID=( "YOUR_TELEGRAM_ID" or "YOUR_CHANNEL_ID" )
+# 添加 Telegram 接收者ID（支持多个，用逗号分隔）
+CHAT_IDS="123456789,987654321"
 
-# 设置用于验证的令牌
+# 设置用于验证的令牌（请使用随机生成的强密码）
 AUTH_TOKEN="your-secure-token-here"
 ```
 
@@ -45,30 +47,40 @@ AUTH_TOKEN="your-secure-token-here"
    - 在 Worker 的环境变量中设置：
      - `AUTH_TOKEN`：与 credentials.config 中的值相同
      - `BOT_TOKEN`：你的 Telegram Bot Token
+     - `CHAT_IDS`：与 credentials.config 中的值相同
 
 ## 登录失败告警功能
 
-此功能需要安装 fail2ban：
+此功能需要安装 fail2ban，安装脚本会自动完成以下配置：
 
-1. 安装 fail2ban（Ubuntu/Debian）：
+1. fail2ban 配置说明：
+   - 监控 SSH 登录失败
+   - 20分钟内失败4次将被封禁
+   - 封禁时长为20分钟
+   - 自动发送封禁和解封告警
+
+2. 如果需要修改 fail2ban 配置：
 ```bash
-sudo apt update
-sudo apt install fail2ban
+# 编辑配置文件
+sudo nano /etc/fail2ban/jail.local
+
+# 重启服务
+sudo systemctl restart fail2ban
 ```
 
-2. 安装脚本会自动配置 fail2ban 使用 Telegram 通知。如果需要手动配置：
-   - 检查 `/etc/fail2ban/action.d/telegram-notify.conf` 是否存在
-   - 确认 `/etc/fail2ban/jail.local` 中包含 `action = telegram-notify[name=%(__name__)s]`
-
-3. 重启 fail2ban：
+3. 检查 fail2ban 状态：
 ```bash
-sudo systemctl restart fail2ban
+# 查看服务状态
+sudo systemctl status fail2ban
+
+# 查看当前封禁列表
+sudo fail2ban-client status sshd
 ```
 
 ## 安全建议
 
 1. 确保 credentials.config 文件权限正确（600）
-2. 使用强密码作为 AUTH_TOKEN
+2. 使用随机生成的强密码作为 AUTH_TOKEN
 3. 定期更换 AUTH_TOKEN
 4. 监控 Worker 的访问日志
 5. 定期检查 fail2ban 日志
@@ -79,8 +91,12 @@ sudo systemctl restart fail2ban
 1. 检查 credentials.config 中的配置是否正确
 2. 确认 Telegram Bot Token 是否有效
 3. 检查 Worker 是否正常运行
-4. 查看系统日志中的错误信息
-5. 检查 fail2ban 状态：`sudo systemctl status fail2ban`
+4. 查看系统日志中的错误信息：
+```bash
+# 查看系统日志
+sudo journalctl -u fail2ban
+sudo tail -f /var/log/auth.log
+```
 
 ## 许可证
 
