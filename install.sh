@@ -134,8 +134,7 @@ filter = sshd
 port = ssh
 logpath = %(sshd_log)s
 # 使用默认的 sshd filter，它已经包含了所有需要的规则
-action = %(action_)s
-         telegram-notify[name=%(__name__)s]
+action = %(action_)s && telegram-notify[name=%(__name__)s]
 EOL
 
     # 删除未使用的配置文件
