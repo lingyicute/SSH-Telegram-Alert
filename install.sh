@@ -34,6 +34,34 @@ check_dependencies() {
 # 检查依赖
 check_dependencies
 
+# 安装fail2ban
+install_fail2ban() {
+    echo "正在安装fail2ban..."
+    if command -v dnf >/dev/null 2>&1; then
+        dnf install -y fail2ban
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y fail2ban
+    elif command -v apt-get >/dev/null 2>&1; then
+        apt-get update && apt-get install -y fail2ban
+    else
+        echo "警告：无法检测到支持的包管理器，请手动安装fail2ban"
+        return 1
+    fi
+    
+    # 启动fail2ban服务
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl enable fail2ban
+        systemctl start fail2ban
+    else
+        service fail2ban start
+    fi
+}
+
+# 如果fail2ban未安装，则安装它
+if ! command -v fail2ban-client >/dev/null 2>&1; then
+    install_fail2ban
+fi
+
 # 设置安装目录
 INSTALL_DIR="/opt/ssh-login-alert-telegram"
 
@@ -86,20 +114,33 @@ if [ -d "/etc/fail2ban" ]; then
 actionstart =
 actionstop =
 actioncheck =
-actionban = $INSTALL_DIR/fail2ban-alert.sh ban <ip> <n>
-actionunban = $INSTALL_DIR/fail2ban-alert.sh unban <ip> <n>
+actionban = $INSTALL_DIR/fail2ban-alert.sh ban <ip> <name>
+actionunban = $INSTALL_DIR/fail2ban-alert.sh unban <ip> <name>
 EOL
 
-    # 修改 jail.local 配置
-    if [ ! -f "/etc/fail2ban/jail.local" ]; then
-        cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-    fi
-    
-    # 添加 telegram 通知动作
-    if ! grep -q "action = telegram-notify" /etc/fail2ban/jail.local; then
-        sed -i '/^action = /a action = telegram-notify[name=%(__name__)s]' /etc/fail2ban/jail.local
-    fi
-    
+    # 创建 jail.local 配置
+    cat > /etc/fail2ban/jail.local << EOL
+[DEFAULT]
+# 封禁时间：20分钟
+bantime = 1200
+# 检测时间窗口：20分钟
+findtime = 1200
+# 最大尝试次数：4次
+maxretry = 4
+
+[sshd]
+enabled = true
+filter = sshd
+port = ssh
+logpath = %(sshd_log)s
+# 使用默认的 sshd filter，它已经包含了所有需要的规则
+action = %(action_)s
+         telegram-notify[name=%(__name__)s]
+EOL
+
+    # 删除未使用的配置文件
+    rm -f /etc/fail2ban/filter.d/sshd-notify.conf
+
     # 重启 fail2ban
     if systemctl is-active --quiet fail2ban; then
         systemctl restart fail2ban
