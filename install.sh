@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# 启用错误处理
+set -e
+set -o pipefail
+
 # 检查是否以 root 权限运行
 if [ "$EUID" -ne 0 ]; then 
     echo "请以 root 权限运行此脚本"
@@ -76,10 +80,9 @@ if [ -d "$INSTALL_DIR" ]; then
 fi
 
 # 创建安装目录
-mkdir -p "$INSTALL_DIR" || {
-    echo "创建安装目录失败"
-    exit 1
-}
+mkdir -p "$INSTALL_DIR" 
+chmod 755 "$INSTALL_DIR"
+chown root:root "$INSTALL_DIR"
 
 # 复制文件
 echo "正在复制文件..."
@@ -136,9 +139,6 @@ logpath = %(sshd_log)s
 # 使用默认的 sshd filter，它已经包含了所有需要的规则
 action = %(action_)s && telegram-notify[name=%(__name__)s]
 EOL
-
-    # 删除未使用的配置文件
-    rm -f /etc/fail2ban/filter.d/sshd-notify.conf
 
     # 重启 fail2ban
     if systemctl is-active --quiet fail2ban; then
